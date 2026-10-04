@@ -1,70 +1,143 @@
 # GardenBuddy
 
-A weather-aware plant care companion.
+GardenBuddy is a weather-aware plant care dashboard for people who want simple, practical help with their plants.
 
-GardenBuddy helps plant owners make better daily care decisions by combining plant stage, sunlight, watering history, local weather, long-term plant memory, and optional local AI planning into a simple dashboard.
+It tracks each plant separately, checks the local forecast for that plant's city, creates a care calendar, and can use a local open-weight model through Ollama for plant-specific planning and chat. The app is designed to stay useful even when the AI model is not running.
 
-## Run locally
+## What It Does
+
+- Add plants with name, type, city, region, stage, placement, sunlight, watering rhythm, and notes.
+- Fetch a 7-day forecast for each plant location using Open-Meteo.
+- Show clear care signals such as `Needs water`, `Skip watering`, `Heat watch`, `Protect from rain`, and `Too cold outside`.
+- Build a horizontal care calendar with watering checks, weather warnings, and user-added tasks.
+- Let you log care actions such as watering.
+- Keep plant-specific memory, so later AI answers can refer to past issues for that same plant.
+- Store data in MongoDB when configured, or fall back to browser storage for a quick local demo.
+- Use optional local AI through Ollama for care plans and plant questions.
+
+## How It Works
+
+GardenBuddy combines three layers:
+
+1. Plant profile data entered by the user.
+2. Live weather data from Open-Meteo.
+3. Care rules and optional local AI.
+
+The rule engine always runs first. It decides the main care signal from watering cadence, placement, rainfall, high temperature, low temperature, and plant notes. If Ollama is available, the AI planner uses the same plant context plus saved memory to produce a more detailed plan or answer questions.
+
+The AI does not replace the rules. It adds explanation, pattern recognition, and plant-specific guidance on top of the computed care signal.
+
+## Project Structure
+
+```txt
+GardenBuddy/
++-- public/
+|   +-- index.html
+|   +-- app.js
+|   +-- styles.css
++-- scripts/
+|   +-- setup-mongodb.mjs
++-- server.mjs
++-- package.json
++-- README.md
++-- SPEC.md
+```
+
+## Requirements
+
+- Node.js 18 or newer
+- npm
+- Optional: Ollama for local AI
+- Optional: MongoDB Atlas or another MongoDB database for cloud persistence
+
+## Run Locally
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the app:
 
 ```bash
 npm start
 ```
 
-Open `http://localhost:3000`.
+Open:
+
+```txt
+http://localhost:3000
+```
+
+If no database is configured, GardenBuddy still runs and stores data in the browser.
 
 ## Optional Local AI
 
-If Ollama is running, GardenBuddy calls `qwen2.5:3b` by default for local care planning.
+GardenBuddy can use a local Ollama model for care plans and plant chat.
+
+Install and start Ollama, then pull the default model:
 
 ```bash
+ollama pull qwen2.5:3b
 ollama serve
+```
+
+In another terminal, start GardenBuddy:
+
+```bash
 OLLAMA_MODEL=qwen2.5:3b npm start
 ```
 
-The app still works without Ollama. In that mode, GardenBuddy uses deterministic care rules, weather, and stored plant history.
+You can also place this in `.env`:
 
-## Optional Cloud Database
+```txt
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=qwen2.5:3b
+```
 
-GardenBuddy can use MongoDB as its cloud data layer. Create `.env` from `.env.example`:
+If Ollama is not running, the app continues to work with rules, weather, calendar, and stored data. Only AI-generated plans and chat answers are unavailable.
+
+## Optional MongoDB Setup
+
+MongoDB is used when you want data to persist outside the browser. This is useful for demos, hosted deployments, and keeping plant history across devices.
+
+Create a local `.env` file:
 
 ```bash
 cp .env.example .env
 ```
 
-Set:
+Set these values:
 
-```bash
-MONGODB_URI="mongodb+srv://..."
+```txt
+MONGODB_URI=mongodb+srv://USER:PASSWORD@CLUSTER.mongodb.net/?appName=GardenBuddy
 MONGODB_DB=gardenbuddy
 GARDEN_ID=demo-garden
 ```
 
-Do not commit `.env`. It is ignored by git.
+Do not commit `.env`. It is already ignored by git.
 
-### Database setup
+### MongoDB Atlas Steps
 
-1. Create a MongoDB database.
-2. Create a database user with read/write permissions.
-3. Add your IP address to Network Access. For a quick local demo, use your current IP. For a hosted demo, add the host's outbound IP or use Atlas's temporary broad access option carefully.
+1. Create a MongoDB Atlas project and cluster.
+2. Create a database user with read/write access.
+3. Add your current IP address in Network Access.
 4. Copy the Node.js connection string from Atlas.
 5. Paste it into `.env` as `MONGODB_URI`.
-6. Start GardenBuddy:
-
-```bash
-npm start
-```
-
-You do not need to manually create collections. GardenBuddy creates them automatically on first use.
-
-To initialize and verify the collections manually, run:
+6. Run the setup script:
 
 ```bash
 npm run setup:mongodb
 ```
 
-### Collections
+The setup script creates indexes only. It does not delete existing data.
 
-GardenBuddy uses four MongoDB collections:
+You do not need to manually create collections. GardenBuddy creates collections on first use.
+
+## Database Collections
+
+GardenBuddy uses four collections:
 
 ```txt
 gardens
@@ -79,12 +152,14 @@ plantMemories
 {
   gardenId: "demo-garden",
   plants: [],
+  calendarItems: [],
+  hiddenCalendarItems: [],
   createdAt: "2026-10-04T...",
   updatedAt: "2026-10-04T..."
 }
 ```
 
-`careLogs` stores individual plant-care events:
+`careLogs` stores care actions:
 
 ```js
 {
@@ -97,7 +172,7 @@ plantMemories
 }
 ```
 
-`aiPlans` stores generated care explanations:
+`aiPlans` stores generated care plans:
 
 ```js
 {
@@ -112,7 +187,7 @@ plantMemories
 }
 ```
 
-`plantMemories` stores plant-scoped AI chat memories:
+`plantMemories` stores plant-specific AI memory:
 
 ```js
 {
@@ -128,46 +203,59 @@ plantMemories
 }
 ```
 
-Before the assistant answers a plant chat, GardenBuddy queries prior `plantMemories` for that same plant using a text index and keyword fallback. The retrieved incidents are passed into the local model so it can say when a symptom or care pattern looks similar to something that happened before.
+Before answering a plant chat, GardenBuddy searches previous `plantMemories` for that same plant. This keeps the memory focused. A tomato plant's history will not be mixed with a snake plant's history.
 
-### Indexes
+## Environment Variables
 
-GardenBuddy creates these indexes automatically:
-
-```js
-gardens: { gardenId: 1 } unique
-careLogs: { gardenId: 1, plantId: 1, createdAt: -1 }
-aiPlans: { gardenId: 1, plantId: 1, createdAt: -1 }
-plantMemories: { gardenId: 1, plantId: 1, createdAt: -1 }
-plantMemories text: { gardenId: 1, plantId: 1, memoryText: "text", tags: "text" }
+```txt
+MONGODB_URI       Optional MongoDB connection string.
+MONGODB_DB        MongoDB database name. Defaults to gardenbuddy.
+GARDEN_ID         Garden state key. Defaults to demo-garden.
+OLLAMA_BASE_URL   Ollama server URL. Defaults to http://127.0.0.1:11434.
+OLLAMA_MODEL      Local model name. Defaults to qwen2.5:3b.
 ```
 
-### Verify cloud mode
+## Scripts
 
-Open `http://localhost:3000`. The top weather panel should show:
+```bash
+npm start          # Start the app
+npm run dev        # Same as npm start
+npm run setup:mongodb
+                   # Create MongoDB indexes and verify the connection
+```
+
+## Verify Storage Mode
+
+Open the app and check the top status text:
 
 ```txt
 Data layer: cloud database
 ```
 
-You can also test:
+You can also check the API:
 
 ```bash
 curl http://localhost:3000/api/state
 ```
 
-Expected:
+When MongoDB is configured, the response includes:
 
 ```json
 {"mode":"atlas","plants":[]}
 ```
 
-When `MONGODB_URI` is present, the app stores:
+Without `MONGODB_URI`, the app returns local mode and uses browser storage.
 
-- plant profiles
-- watering logs
-- generated care plans
-- plant-scoped chat memories
-- garden state
+## Troubleshooting
 
-Without `MONGODB_URI`, the app falls back to browser `localStorage`.
+If plant data disappears after refreshing, check whether you are using browser storage or MongoDB. Browser storage is tied to the current browser and domain.
+
+If AI plans fail, make sure Ollama is running and the model is installed:
+
+```bash
+ollama list
+```
+
+If weather does not load, check the city and region. GardenBuddy uses Open-Meteo geocoding, so more specific locations usually work better.
+
+If MongoDB connection fails, confirm the connection string, database user password, and Atlas Network Access settings.
