@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GardenBuddy</title>
+    <meta name="description" content="A weather-aware plant care companion." />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="hero">
+        <div class="heroCopy">
+          <p class="eyebrow">GardenBuddy</p>
+          <h1>Weather-aware care for real plants.</h1>
+          <p>
+            Add the plant, choose its region, and let GardenBuddy turn weather, sunlight, and care history into a simple plan.
+          </p>
+          <div class="heroPills">
+            <span>Local forecast</span>
+            <span>Outdoor safety</span>
+            <span>Growth guidance</span>
+          </div>
+        </div>
+        <div class="todayPanel">
+          <span>Today</span>
+          <strong id="todayTaskCount">0 tasks</strong>
+          <p id="weatherSummary">Add a city to load weather-aware suggestions.</p>
+          <small id="dataMode">Data layer: local browser</small>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <aside class="controlPanel">
+          <div class="panelHeader">
+            <h2>Add Plant</h2>
+            <p>Pick a plant type so the card uses a matching plant photo.</p>
+          </div>
+          <form id="plantForm">
+            <label>
+              Plant type
+              <div class="combo">
+                <input id="plantSearch" required autocomplete="off" placeholder="Search basil, rose, orchid..." />
+                <div id="plantSuggestions" class="suggestions" hidden></div>
+              </div>
+            </label>
+            <label>
+              Nickname
+              <input id="plantName" placeholder="Kitchen basil" />
+            </label>
+            <label>
+              Location
+              <div class="combo">
+                <input id="locationSearch" required autocomplete="off" placeholder="Search city, region, country" />
+                <div id="locationSuggestions" class="suggestions" hidden></div>
+              </div>
+            </label>
+            <div class="twoCol">
+              <label>
+                Stage
+                <select id="plantStage">
+                  <option>Seedling</option>
+                  <option>Young</option>
+                  <option selected>Mature</option>
+                  <option>Flowering</option>
+                  <option>Struggling</option>
+                </select>
+              </label>
+              <label>
+                Placement
+                <select id="plantPlace">
+                  <option>Indoor</option>
+                  <option selected>Outdoor</option>
+                  <option>Balcony</option>
+                  <option>Garden bed</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              Sunlight
+              <select id="plantLight">
+                <option>Low light</option>
+                <option selected>Partial sun</option>
+                <option>Full sun</option>
+                <option>Harsh afternoon sun</option>
+              </select>
+            </label>
+            <div class="twoCol">
+              <label>
+                Last watered
+                <input id="lastWatered" type="date" />
+              </label>
+              <div class="autoCadence">
+                <span>Auto care rhythm</span>
+                <strong id="cadencePreview">Select a plant</strong>
+              </div>
+            </div>
+            <label>
+              Notes
+              <textarea id="plantNotes" placeholder="Yellow leaves, small pot, recently repotted..."></textarea>
+            </label>
+            <button class="primary" type="submit">Add to garden</button>
+          </form>
+        </aside>
+
+        <section class="mainBoard">
+          <div class="toolbar">
+            <div>
+              <p class="eyebrow">Living Dashboard</p>
+              <h2>My Garden</h2>
+            </div>
+            <button id="clearGarden" class="ghost">Clear garden</button>
+          </div>
+
+          <div class="statsGrid">
+            <div>
+              <span>Plants</span>
+              <strong id="plantCount">0</strong>
+            </div>
+            <div>
+              <span>Need action</span>
+              <strong id="needCareCount">0</strong>
+            </div>
+            <div>
+              <span>Move / protect</span>
+              <strong id="rainSkipCount">0</strong>
+            </div>
+            <div>
+              <span>Open AI planner</span>
+              <strong id="aiMode">Rules</strong>
+            </div>
+          </div>
+
+          <div id="plantGrid" class="plantGrid"></div>
+
+          <section class="calendarPanel">
+            <div class="panelHeader">
+              <h2>Care Calendar</h2>
+              <p>History and the next seven days, adjusted by weather.</p>
+            </div>
+            <form id="calendarForm" class="calendarForm">
+              <input id="calendarDate" type="date" />
+              <input id="calendarTitle" placeholder="Add pruning, misting, fertilizer..." />
+              <button class="ghost" type="submit">Add</button>
+            </form>
+            <div id="calendarPlantFilters" class="calendarPlantFilters"></div>
+            <div id="calendar" class="calendar"></div>
+          </section>
+        </section>
+      </section>
+
+      <dialog id="careDialog">
+        <div class="dialogHeader">
+          <div>
+            <p class="eyebrow">GardenBuddy AI</p>
+            <h2 id="dialogTitle">Care plan</h2>
+          </div>
+          <button id="closeDialog" class="iconButton" aria-label="Close dialog">×</button>
+        </div>
+        <div id="dialogBody" class="dialogBody">Loading...</div>
+      </dialog>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
