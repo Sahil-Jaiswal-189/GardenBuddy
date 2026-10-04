@@ -574,7 +574,7 @@ async function chatWithGarden(payload, gardenId = defaultGardenId) {
   const prompt = `You are GardenBuddy's local open-weight plant chat assistant.
 Answer using the selected plant memory below.
 This memory is intentionally scoped to one plant because plants may live in different places.
-Use this plant's watering history, notes, placement, calendar tasks, cancelled actions, and past Qwen plans to recognize repeated issues.
+Use this plant's watering history, notes, placement, calendar tasks, cancelled actions, and past AI plans to recognize repeated issues.
 When relevantPastMemories contains a similar older incident, explicitly say it looks similar to that prior incident and cite the date.
 Do not use other plants as evidence unless the user explicitly asks for a comparison.
 If the user asks why, mention the specific data point that drove the advice.

@@ -1,8 +1,8 @@
 # GardenBuddy
 
-A weather-aware plant care companion built for the Hacktoberfest Weekend Challenge.
+A weather-aware plant care companion.
 
-GardenBuddy helps a friend keep plants alive by combining plant stage, sunlight, watering history, local weather, MongoDB Atlas memory, and local Qwen care planning into a simple dashboard.
+GardenBuddy helps plant owners make better daily care decisions by combining plant stage, sunlight, watering history, local weather, long-term plant memory, and optional local AI planning into a simple dashboard.
 
 ## Run locally
 
@@ -12,20 +12,20 @@ npm start
 
 Open `http://localhost:3000`.
 
-## Optional AI
+## Optional Local AI
 
-If Ollama is running, GardenBuddy calls `qwen2.5:3b` by default for open-weight care planning.
+If Ollama is running, GardenBuddy calls `qwen2.5:3b` by default for local care planning.
 
 ```bash
 ollama serve
 OLLAMA_MODEL=qwen2.5:3b npm start
 ```
 
-The app still works without Ollama, but Qwen care plans are the intended open-source AI layer for the challenge submission.
+The app still works without Ollama. In that mode, GardenBuddy uses deterministic care rules, weather, and stored plant history.
 
-## MongoDB Atlas
+## Optional Cloud Database
 
-GardenBuddy can use MongoDB Atlas as its data layer. Create `.env` from `.env.example`:
+GardenBuddy can use MongoDB as its cloud data layer. Create `.env` from `.env.example`:
 
 ```bash
 cp .env.example .env
@@ -41,9 +41,9 @@ GARDEN_ID=demo-garden
 
 Do not commit `.env`. It is ignored by git.
 
-### Atlas setup
+### Database setup
 
-1. Create a free MongoDB Atlas cluster.
+1. Create a MongoDB database.
 2. Create a database user with read/write permissions.
 3. Add your IP address to Network Access. For a quick local demo, use your current IP. For a hosted demo, add the host's outbound IP or use Atlas's temporary broad access option carefully.
 4. Copy the Node.js connection string from Atlas.
@@ -97,7 +97,7 @@ plantMemories
 }
 ```
 
-`aiPlans` stores open-model care explanations:
+`aiPlans` stores generated care explanations:
 
 ```js
 {
@@ -112,7 +112,7 @@ plantMemories
 }
 ```
 
-`plantMemories` stores plant-scoped Qwen chat memories:
+`plantMemories` stores plant-scoped AI chat memories:
 
 ```js
 {
@@ -128,7 +128,7 @@ plantMemories
 }
 ```
 
-Before Qwen answers a plant chat, GardenBuddy queries Atlas for prior `plantMemories` for that same plant using a text index and keyword fallback. The retrieved incidents are passed into the open-weight model so it can say when a symptom or care pattern looks similar to something that happened before.
+Before the assistant answers a plant chat, GardenBuddy queries prior `plantMemories` for that same plant using a text index and keyword fallback. The retrieved incidents are passed into the local model so it can say when a symptom or care pattern looks similar to something that happened before.
 
 ### Indexes
 
@@ -142,12 +142,12 @@ plantMemories: { gardenId: 1, plantId: 1, createdAt: -1 }
 plantMemories text: { gardenId: 1, plantId: 1, memoryText: "text", tags: "text" }
 ```
 
-### Verify Atlas mode
+### Verify cloud mode
 
 Open `http://localhost:3000`. The top weather panel should show:
 
 ```txt
-Data layer: MongoDB Atlas
+Data layer: cloud database
 ```
 
 You can also test:
@@ -166,16 +166,8 @@ When `MONGODB_URI` is present, the app stores:
 
 - plant profiles
 - watering logs
-- generated Qwen care plans
-- plant-scoped Qwen chat memories
+- generated care plans
+- plant-scoped chat memories
 - garden state
 
 Without `MONGODB_URI`, the app falls back to browser `localStorage`.
-
-## Prize category path
-
-- Qwen: open-weight care planning layer through Ollama.
-- MongoDB Atlas: plant-scoped long-term memory for the Qwen agent, including chat incident recall through `plantMemories` text retrieval.
-- Mastra: later agent orchestration layer for tools and care workflows.
-- Temporal: later durable reminder workflow.
-- Entire: later agent-session evidence for the DEV write-up.

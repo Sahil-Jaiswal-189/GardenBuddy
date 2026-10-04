@@ -644,7 +644,7 @@ async function render() {
   state.plants = state.plants.map(normalizePlant);
   await Promise.all([...new Set(state.plants.map(locationKey))].map(fetchWeather));
   elements.dataMode.textContent =
-    backendMode === "atlas" ? "Data layer: MongoDB Atlas" : "Data layer: local browser";
+    backendMode === "atlas" ? "Data layer: cloud database" : "Data layer: local browser";
   renderStats();
   renderPlants();
   renderCalendarFilters();
@@ -738,8 +738,8 @@ function renderPlants() {
         <p>${escapeHtml(plant.notes || "No notes yet.")}</p>
         <div class="cardActions">
           <button class="cardButton" data-water="${plant.id}">Log watered</button>
-          <button class="cardButton secondary" data-plan="${plant.id}">Qwen plan</button>
-          <button class="cardButton secondary" data-chat="${plant.id}">Ask Qwen</button>
+          <button class="cardButton secondary" data-plan="${plant.id}">AI plan</button>
+          <button class="cardButton secondary" data-chat="${plant.id}">Ask AI</button>
         </div>
       </div>
     `;
@@ -1086,8 +1086,8 @@ async function generatePlantPlan(plantId) {
   const signal = careSignal(plant);
   const weather = dailyWeatherFor(plant);
 
-  elements.dialogTitle.textContent = `${plant.name} Qwen plan`;
-  elements.dialogBody.textContent = "Generating a local open-weight care plan with Qwen...";
+  elements.dialogTitle.textContent = `${plant.name} AI plan`;
+  elements.dialogBody.textContent = "Generating a local care plan...";
   elements.dialog.showModal();
 
   const response = await fetch("/api/plan", {
@@ -1097,7 +1097,7 @@ async function generatePlantPlan(plantId) {
   });
   const data = await response.json();
   if (!response.ok) {
-    elements.dialogBody.textContent = data.error || "Could not generate Qwen plan.";
+    elements.dialogBody.textContent = data.error || "Could not generate an AI plan.";
     return;
   }
 
@@ -1115,7 +1115,7 @@ async function generatePlantPlan(plantId) {
 function openPlantChat(plantId) {
   const plant = state.plants.find((item) => item.id === plantId);
   if (!plant) return;
-  elements.dialogTitle.textContent = `${plant.name} Qwen chat`;
+  elements.dialogTitle.textContent = `${plant.name} AI chat`;
   elements.dialogBody.innerHTML = `
     <div class="chatPanel" data-chat-plant="${escapeHtml(plant.id)}">
       <div class="chatContext">
@@ -1127,7 +1127,7 @@ function openPlantChat(plantId) {
       </div>
       <div class="chatMessages" id="chatMessages">
         <div class="chatBubble assistant">
-          Ask about watering, placement, weather risk, completed tasks, or why a recommendation appeared. I will use this garden's saved history and schedule.
+          Ask about watering, placement, weather risk, completed tasks, or why a recommendation appeared. I will use this plant's saved history and schedule.
         </div>
       </div>
       <form class="chatForm" id="chatForm">
@@ -1155,7 +1155,7 @@ async function askPlantQuestion(plantId) {
   messages.insertAdjacentHTML("beforeend", `<div class="chatBubble user">${escapeHtml(question)}</div>`);
   const pending = document.createElement("div");
   pending.className = "chatBubble assistant pending";
-  pending.textContent = "Checking garden memory with Qwen...";
+  pending.textContent = "Checking plant memory...";
   messages.appendChild(pending);
   messages.scrollTop = messages.scrollHeight;
 
@@ -1173,7 +1173,7 @@ async function askPlantQuestion(plantId) {
   });
   const data = await response.json();
   pending.classList.remove("pending");
-  pending.textContent = response.ok ? data.text : data.error || "Qwen could not answer right now.";
+  pending.textContent = response.ok ? data.text : data.error || "The assistant could not answer right now.";
   elements.aiMode.textContent = data.model || elements.aiMode.textContent;
   messages.scrollTop = messages.scrollHeight;
 }
